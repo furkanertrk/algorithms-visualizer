@@ -1,6 +1,6 @@
 **Algoritma Görselleştirme Platformu** — Sıralama, arama, graf, dinamik programlama ve daha fazla algoritmayı adım adım görselleştirerek öğrenin.
 
-🔗 **[Canlı Demo →](https://kullaniciadi.github.io/algo-viz)**
+🔗 **[Canlı Site →](https://furkanertrk.github.io/algorithms-visualizer/)**
 
 ---
 
@@ -137,8 +137,8 @@ Sıfır bağımlılık. Sıfır framework. Sıfır build adımı.
 ## 🚀 Kurulum
 
 ```bash
-git clone https://github.com/kullaniciadi/algo-viz.git
-cd algo-viz
+git clone https://github.com/furkanertrk/algorithms-visualizer.git
+cd algorithms-visualizer
 # Herhangi bir statik sunucu ile aç:
 npx serve .
 # veya doğrudan index.html'i tarayıcıda aç
@@ -149,7 +149,7 @@ npx serve .
 ## 📁 Proje Yapısı
 
 ```
-algo-viz/
+algorithms-visualizer/
 ├── index.html          # Tek sayfa, tüm view'lar burada
 ├── css/
 │   ├── theme.css       # CSS değişkenleri, dark/light tema
