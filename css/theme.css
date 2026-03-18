@@ -1,0 +1,185 @@
+/* ============================================================
+   theme.css — Algoritma Görselleştirme Platformu
+   Renk paleti, CSS değişkenleri, tipografi ve tema sistemi
+   ============================================================ */
+
+/* ---- Google Fonts: Inter (UI) + Fira Code (Monospace) ---- */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ============================================================
+   CSS Custom Properties (Değişkenler)
+   Tüm renk, boyut ve zamanlama değerleri buradan yönetilir.
+   ============================================================ */
+:root {
+  /* ---- Arka Plan Renkleri ---- */
+  --bg-primary: #0F172A;
+  --bg-secondary: #1E293B;
+  --bg-tertiary: #334155;
+  --bg-canvas: #0D1117;
+  --bg-glass: rgba(30, 41, 59, 0.6);
+
+  /* ---- Metin Renkleri ---- */
+  --text-primary: #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-inverse: #FFFFFF;
+
+  /* ---- Accent (Vurgu) Renkleri ---- */
+  --accent-green: #30353d;
+  --accent-green-dim: rgba(48, 53, 61, 0.25);
+  --accent-purple: #3B82F6;
+  --accent-purple-dim: rgba(59, 130, 246, 0.15);
+  --accent-amber: #F59E0B;
+  --accent-rose: #F43F5E;
+
+  /* ---- Gradient Accent (Başlıklar ve vurgular için) ---- */
+  --gradient-accent: linear-gradient(135deg, #3B82F6 0%, #60A5FA 50%, #93C5FD 100%);
+
+  /* ---- Neon Glow Renkleri ---- */
+  --glow-green: 0 0 20px rgba(48, 53, 61, 0.4),
+    0 0 40px rgba(48, 53, 61, 0.1);
+  --glow-purple: 0 0 20px rgba(59, 130, 246, 0.4),
+    0 0 40px rgba(59, 130, 246, 0.1);
+
+  /* ---- Border Renkleri ---- */
+  --border-subtle: rgba(148, 163, 184, 0.1);
+  --border-medium: rgba(148, 163, 184, 0.2);
+  --border-accent: rgba(59, 130, 246, 0.5);
+
+  /* ---- Tipografi ---- */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+
+  /* ---- Boyutlandırma ---- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Spacing ---- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* ---- Animasyon ---- */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-base: 0.3s ease-in-out;
+  --transition-slow: 0.5s ease-in-out;
+  --transition-view: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- Z-Index ---- */
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+
+  /* ---- Glassmorphism ---- */
+  --glass-blur: blur(12px);
+  --glass-bg: rgba(30, 41, 59, 0.6);
+  --glass-border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+/* ============================================================
+   Light Theme Overrides
+   ============================================================ */
+[data-theme='light'] {
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #F1F5F9;
+  --bg-canvas: #FFFFFF;
+  --bg-glass: rgba(255, 255, 255, 0.7);
+
+  --text-primary: #1E293B;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-inverse: #FFFFFF;
+
+  --accent-green: #30353d;
+  --accent-green-dim: rgba(48, 53, 61, 0.1);
+
+  --glow-green: 0 0 20px rgba(48, 53, 61, 0.15),
+    0 0 40px rgba(48, 53, 61, 0.05);
+  --glow-purple: 0 0 20px rgba(59, 130, 246, 0.2),
+    0 0 40px rgba(59, 130, 246, 0.08);
+
+  --border-subtle: rgba(30, 41, 59, 0.08);
+  --border-medium: rgba(30, 41, 59, 0.15);
+  --border-accent: rgba(59, 130, 246, 0.4);
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: 1px solid rgba(30, 41, 59, 0.1);
+}
+
+/* ============================================================
+   Temel Reset ve Genel Stiller
+   ============================================================ */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ---- Genel Bağlantı Stili ---- */
+a {
+  color: var(--accent-green);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-purple);
+}
+
+/* ---- Monospace metin için yardımcı sınıf ---- */
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ---- Scrollbar Özelleştirme (Webkit) ---- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ---- Seçim (Selection) Rengi ---- */
+::selection {
+  background-color: var(--accent-purple-dim);
+  color: var(--text-primary);
+}
