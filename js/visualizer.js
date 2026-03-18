@@ -318,6 +318,16 @@ const Visualizer = (() => {
 
       ctx.fillStyle = color;
       ctx.fillRect(x, y, bw, barH);
+
+      // Sayı etiketi — sadece sütun yeterince genişse göster
+      if (barW >= 12) {
+        const fontSize = Math.max(8, Math.min(11, Math.floor(barW * 0.55)));
+        ctx.fillStyle    = 'rgba(255,255,255,0.70)';
+        ctx.font         = `${fontSize}px monospace`;
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(String(arr[i]), x + bw / 2, H + 2);
+      }
     }
 
     if (step.label) {
