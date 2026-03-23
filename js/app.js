@@ -232,8 +232,8 @@ const App = (() => {
     if (existing) {
       const srcEl = document.getElementById('select-source');
       const tgtEl = document.getElementById('select-target');
-      if (srcEl) srcEl.value = String(state.sourceNode);
-      if (tgtEl) tgtEl.value = String(state.targetNode);
+      if (srcEl) state.sourceNode = parseInt(srcEl.value, 10);
+      if (tgtEl) state.targetNode = parseInt(tgtEl.value, 10);
       return;
     }
 

@@ -1,6 +1,6 @@
 **Algoritma Görselleştirme Platformu** — Sıralama, arama, graf, dinamik programlama ve daha fazla algoritmayı adım adım görselleştirerek öğrenin.
 
-🔗 **[Canlı Site →](https://furkanertrk.github.io/algorithms-visualizer/)**
+🔗 **[Canlı Site →](https://algorithms-visualizer-eight.vercel.app/)**
 
 ---
 

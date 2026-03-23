@@ -537,9 +537,8 @@ const Algorithms = (() => {
    * Topoloji (from/to) sonsuza dek sabittir — sadece ağırlıklar rastgeledir.
    * @param {number} _ignored — artık kullanılmıyor, her zaman 6 düğüm
    */
-  function _generateGraph(_ignored) {
+  function _generateGraph(_ignored, allowNegative = false) {
     const n = 6; // KESİNLİKLE 6 düğüm (A B C D E F)
-    const adj = Array.from({ length: n }, () => []);
 
     // SABİT TOPOLOJI — bu liste asla değişmez
     const FIXED_EDGES = [
@@ -554,13 +553,71 @@ const Algorithms = (() => {
       [4, 5],  // E – F
     ];
 
-    for (const [u, v] of FIXED_EDGES) {
-      const w = Math.floor(Math.random() * 19) + 1; // sadece ağırlık rastgele
-      adj[u].push({ to: v, w });
-      adj[v].push({ to: u, w });
+    /* ----
+       BUG FIX: Eski yaklaşım "ters yönü pozitif yap" yöntemini kullanıyordu,
+       ancak bu yöntem 3+ kenarlı döngüleri engelleyemiyordu.
+       Örnek: A→B=-9, B→D=-5, D→A=+1 → döngü = -9 + (-5) + 1 = -13 < 0 ✗
+
+       Doğru yaklaşım: Graf ürettikten sonra Bellman-Ford ile negatif döngü
+       olup olmadığını kontrol et. Varsa yeniden üret (retry).
+       100 deneme yeterli; pratikte 2–5 denemede temiz graf bulunur.
+    ---- */
+
+    function build() {
+      const adj = Array.from({ length: n }, () => []);
+      for (const [u, v] of FIXED_EDGES) {
+        if (allowNegative && Math.random() < 0.30) {
+          // Negatif kenar YÖNLÜ: u→v negatif, v→u pozitif
+          const negW = -(Math.floor(Math.random() * 9) + 1); // -1 .. -9
+          const posW = Math.floor(Math.random() * 15) + 5;   // +5 .. +19
+          adj[u].push({ to: v, w: negW });
+          adj[v].push({ to: u, w: posW });
+        } else {
+          const w = Math.floor(Math.random() * 19) + 1;      // +1 .. +19
+          adj[u].push({ to: v, w });
+          adj[v].push({ to: u, w });
+        }
+      }
+      return adj;
     }
 
-    return adj;
+    function hasNegCycle(adj) {
+      // Bellman-Ford — sanal süper-kaynak (tüm dist=0) ile
+      // grafın HERHANGİ bir yerindeki negatif döngüyü tespit eder.
+      const dist = new Array(n).fill(0);
+      for (let iter = 0; iter < n - 1; iter++) {
+        for (let u = 0; u < n; u++) {
+          for (const e of adj[u]) {
+            if (dist[u] + e.w < dist[e.to]) dist[e.to] = dist[u] + e.w;
+          }
+        }
+      }
+      // n. iterasyonda hâlâ güncelleme oluyorsa → negatif döngü var
+      for (let u = 0; u < n; u++) {
+        for (const e of adj[u]) {
+          if (dist[u] + e.w < dist[e.to]) return true;
+        }
+      }
+      return false;
+    }
+
+    // Negatif ağırlık istenmiyor → doğrudan üret
+    if (!allowNegative) return build();
+
+    // Negatif ağırlık isteniyor → negatif döngüsüz graf bul
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const adj = build();
+      if (!hasNegCycle(adj)) return adj;
+    }
+
+    // 100 denemede bulunamazsa (pratik olarak olmaz) → güvenli tam-pozitif graf
+    const fallback = Array.from({ length: n }, () => []);
+    for (const [u, v] of FIXED_EDGES) {
+      const w = Math.floor(Math.random() * 19) + 1;
+      fallback[u].push({ to: v, w });
+      fallback[v].push({ to: u, w });
+    }
+    return fallback;
   }
 
   /** Graf snapshot üretici */
@@ -671,52 +728,100 @@ const Algorithms = (() => {
      ============================================================ */
   function bellmanFord(inputArr, source = 0, target = 5) {
     const n = 6; // SABİT: 6 düğüm
-    const adj = _generateGraph(n);
+    const adj = _generateGraph(n, true); // Negatif ağırlıklara izin ver
     const dist = new Array(n).fill(Infinity);
     const prev = new Array(n).fill(-1);
     const steps = [];
     dist[source] = 0;
 
+    // Kenarları adj'den doğrudan topla (negatif kenarlar zaten tek yönlü)
     const edges = [];
-    const seen = new Set();
     for (let u = 0; u < n; u++) {
       for (const e of adj[u]) {
-        const key = Math.min(u, e.to) + '-' + Math.max(u, e.to);
-        if (!seen.has(key)) { seen.add(key); edges.push({ from: u, to: e.to, w: e.w }); }
+        edges.push({ from: u, to: e.to, w: e.w });
       }
     }
 
     const ec = {};
-    _graphSnap(steps, adj, n, { [source + '_val']: 0 }, ec, `Bellman-Ford: kaynak=${NODE_LABELS[source]} → hedef=${NODE_LABELS[target]}`);
+    _graphSnap(steps, adj, n, { [source + '_val']: 0 }, ec,
+      `Bellman-Ford: kaynak=${NODE_LABELS[source]} → hedef=${NODE_LABELS[target]}`);
 
+    // n-1 iterasyon
     for (let iter = 0; iter < n - 1; iter++) {
-      let updated = false;
+
+      // Iterasyon başlangıcı: mevcut durumu göster
+      const ncIter = {};
+      for (let i = 0; i < n; i++) { ncIter[i + '_val'] = dist[i] === Infinity ? null : dist[i]; }
+      ncIter[source] = 'visited';
+      _graphSnap(steps, adj, n, ncIter, { ...ec },
+        `İterasyon ${iter + 1} / ${n - 1}`);
+
       for (const e of edges) {
-        if (dist[e.from] < Infinity) {
+        if (dist[e.from] === Infinity) continue;
+        if (dist[e.from] + e.w < dist[e.to]) {
+          dist[e.to] = dist[e.from] + e.w;
+          prev[e.to] = e.from;
           const eKey = Math.min(e.from, e.to) + '-' + Math.max(e.from, e.to);
+          ec[eKey] = 'mst';
           const nc = {};
           for (let i = 0; i < n; i++) { nc[i + '_val'] = dist[i] === Infinity ? null : dist[i]; }
           nc[e.from] = 'visited'; nc[e.to] = 'active';
-          _graphSnap(steps, adj, n, nc, { ...ec, [eKey]: 'active' }, `Kenar ${NODE_LABELS[e.from]}→${NODE_LABELS[e.to]} (w=${e.w})`);
+          _graphSnap(steps, adj, n, nc, { ...ec, [eKey]: 'active' },
+            `Güncelle: d(${NODE_LABELS[e.to]})=${dist[e.to]}  [kenar ${NODE_LABELS[e.from]}→${NODE_LABELS[e.to]}, w=${e.w}]`);
+        }
+      }
+    }
 
-          if (dist[e.from] + e.w < dist[e.to]) {
-            dist[e.to] = dist[e.from] + e.w;
-          prev[e.to] = e.from;
-            ec[eKey] = 'mst';
-            nc[e.to + '_val'] = dist[e.to];
-            _graphSnap(steps, adj, n, nc, ec, `Güncelle: d(${NODE_LABELS[e.to]})=${dist[e.to]}`);
-            updated = true;
+    // n. iterasyon — negatif döngü tespiti + BFS ile etkilenen düğümleri işaretle
+    const negCycleNodes = new Set();
+    for (const e of edges) {
+      if (dist[e.from] !== Infinity && dist[e.from] + e.w < dist[e.to]) {
+        negCycleNodes.add(e.from);
+        negCycleNodes.add(e.to);
+      }
+    }
+
+    // BFS: negatif döngüden ulaşılabilen tüm düğümleri de -Infinity yap
+    if (negCycleNodes.size > 0) {
+      const queue = [...negCycleNodes];
+      const affected = new Set(negCycleNodes);
+      while (queue.length > 0) {
+        const u = queue.shift();
+        for (const e of adj[u]) {
+          if (!affected.has(e.to)) {
+            affected.add(e.to);
+            queue.push(e.to);
           }
         }
       }
-      if (!updated) break;
+      for (const node of affected) {
+        dist[node] = -Infinity;
+        negCycleNodes.add(node);
+      }
     }
 
+    const targetInNegCycle = negCycleNodes.has(target);
+
+    // Negatif döngü tespit edildiyse uyarı snap'ı
+    if (negCycleNodes.size > 0) {
+      const ncWarn = {};
+      for (let i = 0; i < n; i++) {
+        ncWarn[i] = negCycleNodes.has(i) ? 'path' : 'visited';
+        ncWarn[i + '_val'] = dist[i] === -Infinity ? '-∞' : (dist[i] === Infinity ? null : dist[i]);
+      }
+      _graphSnap(steps, adj, n, ncWarn, { ...ec },
+        `⚠️ Negatif döngü tespit edildi! Etkilenen düğümler: ${[...negCycleNodes].map(i => NODE_LABELS[i]).join(', ')}`);
+    }
+
+    // En kısa yolu geri iz
     const ncF = {};
     const ecF = { ...ec };
-    for (let i = 0; i < n; i++) { ncF[i] = 'visited'; ncF[i + '_val'] = dist[i] === Infinity ? null : dist[i]; }
+    for (let i = 0; i < n; i++) {
+      ncF[i] = negCycleNodes.has(i) ? 'path' : 'visited';
+      ncF[i + '_val'] = dist[i] === -Infinity ? '-∞' : (dist[i] === Infinity ? null : dist[i]);
+    }
     ncF[source] = 'current';
-    if (dist[target] < Infinity) {
+    if (!targetInNegCycle && dist[target] < Infinity && dist[target] > -Infinity) {
       let cur = target;
       while (cur !== -1 && prev[cur] !== -1) {
         const eKey = Math.min(cur, prev[cur]) + '-' + Math.max(cur, prev[cur]);
@@ -726,8 +831,10 @@ const Algorithms = (() => {
       }
       ncF[source] = 'path';
     }
-    const bfCost = dist[target] === Infinity ? '∞' : dist[target];
-    _graphSnap(steps, adj, n, ncF, ecF, `Bellman-Ford tamamlandı! ${NODE_LABELS[source]}→${NODE_LABELS[target]}: ${bfCost}`);
+    const bfCost = targetInNegCycle ? '⚠️ Negatif döngü!'
+      : dist[target] === Infinity ? '∞' : dist[target];
+    _graphSnap(steps, adj, n, ncF, ecF,
+      `Bellman-Ford tamamlandı! ${NODE_LABELS[source]}→${NODE_LABELS[target]}: ${bfCost}`);
     return steps;
   }
 
@@ -1198,6 +1305,7 @@ const Algorithms = (() => {
     edges.sort((a, b) => a.w - b.w);
 
     const parent = Array.from({ length: n }, (_, i) => i);
+    const rank = new Array(n).fill(0);
     function find(x) { return parent[x] === x ? x : (parent[x] = find(parent[x])); }
     const mstCount = { val: 0 };
 
@@ -1211,7 +1319,9 @@ const Algorithms = (() => {
 
       const px = find(e.from), py = find(e.to);
       if (px !== py) {
-        parent[px] = py;
+        if (rank[px] < rank[py]) { parent[px] = py; }
+        else if (rank[px] > rank[py]) { parent[py] = px; }
+        else { parent[py] = px; rank[px]++; }
         ec[e.key] = 'mst';
         mstCount.val++;
         const ncA = {};
@@ -1262,6 +1372,11 @@ const Algorithms = (() => {
 
       for (const e of adj[u]) {
         if (!inMST.has(e.to) && e.w < key[e.to]) {
+          // Eski MST kenarını temizle (varsa)
+          for (const prev of adj[e.to]) {
+            const oldKey = Math.min(e.to, prev.to) + '-' + Math.max(e.to, prev.to);
+            if (ec[oldKey] === 'mst') { delete ec[oldKey]; break; }
+          }
           key[e.to] = e.w;
           const eKey = Math.min(u, e.to) + '-' + Math.max(u, e.to);
           ec[eKey] = 'mst';
