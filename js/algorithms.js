@@ -682,6 +682,9 @@ const Algorithms = (() => {
       nc2[u] = 'current';
       _graphSnap(steps, adj, n, nc2, { ...ec }, `Düğüm ${NODE_LABELS[u]} seçildi (d=${dist[u]})`);
 
+      // ✅ Hedef düğüme ulaşıldı — daha fazla işlem gereksiz, dur
+      if (u === target) break;
+
       for (const edge of adj[u]) {
         if (!visited.has(edge.to)) {
           const eKey = Math.min(u, edge.to) + '-' + Math.max(u, edge.to);
@@ -693,7 +696,7 @@ const Algorithms = (() => {
 
           if (dist[u] + edge.w < dist[edge.to]) {
             dist[edge.to] = dist[u] + edge.w;
-            prev[edge.to] = u; // ← önceki düğümü kaydet
+            prev[edge.to] = u;
             nc3[edge.to + '_val'] = dist[edge.to];
             ec3[eKey] = 'mst';
             _graphSnap(steps, adj, n, nc3, ec3, `Güncelle: d(${NODE_LABELS[edge.to]})=${dist[edge.to]}`);
